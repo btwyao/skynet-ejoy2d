@@ -1,0 +1,14 @@
+thread = 3
+logger = nil
+harbor = 0
+start = "main"
+bootstrap = "snlua bootstrap"	-- The service for bootstrap
+luaservice = "/sdcard/shoucangjia/service/?.lua;/sdcard/shoucangjia/asset/?.lua;/sdcard/shoucangjia/test/?.lua;/sdcard/shoucangjia/examples/?.lua"
+lua_path = "/sdcard/shoucangjia/lualib/?.lua;/sdcard/shoucangjia/lualib/?/init.lua"
+lua_cpath = "/data/data/com.example.shoucangjia/files/?.so"
+--lua_cpath = "/shoucangjia/?.so"
+lualoader = "/sdcard/shoucangjia/lualib/loader.lua"
+cpath = "/data/data/com.example.shoucangjia/files/?.so"
+--cpath = "/shoucangjia/?.so"
+platform = "android"
+--cluster = "/sdcard/shoucangjia/examples/clustername.lua"

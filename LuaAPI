@@ -1,0 +1,184 @@
+## ejoy2dx
+
+local ej = require "ejoy2dx"
+
+ej.start(func)
+逻辑服务入口函数，程序将调用func开始运行该服务
+
+ej.register_update_func(func)
+指定当前service的逻辑循环函数func。默认以每秒30帧的频率调用该函数
+
+## view
+
+local view = require "view"
+
+view.new{order = "none",}
+创建一个视图，将需要绘制在屏幕上的精灵放入该视图内。视图可以嵌套其他视图或精灵，
+目前视图支持两种画图顺序，由参数order制定："none"和"assign"。默认为none，表示视图中的元素
+以无序方式绘制。assign表示需指定每个元素的绘制排名，排名越低越先绘制。
+
+view.service_view(v,pos)
+每个service都有一个根视图，整个绘画结构为树形的。其他视图都需要成为其子孙节点才能被绘制在屏幕上。
+该函数就是指定参数v为当前service的根视图，pos表示该service在所有service当中的绘制顺序排名。
+
+###view 方法
+view:insert(element,pos)
+将element放入该视图中，当绘画顺序为assign时pos才有效，指定该元素的绘制排名
+
+view:update(elemet,pos)
+当绘画顺序为assign时该函数才有效，刷新元素的绘制排名
+
+view:remove(element)
+将element从该视图中删除
+
+view:ps(x,y,scale)
+类似精灵的方法sprite:ps(x,y,scale)
+
+view:sr(sx,sy,rot)
+类似精灵的方法sprite:sr(sx,sy,rot)
+
+## sprite
+
+local sprite = require "sprite"
+
+sprite.new( packname, name )
+从 packname 指代的包中构造名为 name 的精灵对象并返回。
+这里，"packname" 是资源包的名字，"name" 是在资源包中对象的导出名。每个资源包中的对象都有一个数字 id ，字符串名是可选的。这个 api 同样支持传入数字 id ，但并不推荐这样用。
+sprite 是 ejoy2d 可以处理的基本图形对象。每个 sprite 都是若干图元以树状组合起来的。大部分情况下，不可以在运行期用 ejoy2d api 动态构建一棵 sprite 图元树，而只能从外部资源包中加载它。
+构造出来的 sprite 对象都可以对其调用下面一系列方法
+
+###sprite 方法
+sprite:ps(x,y,scale)
+sprite:ps 这个方法就是用来设置对象的位置和缩放信息的。前两个参数是 x 和 y 坐标值，第三个参数是缩放量，这里只提供等比缩放。第三个参数可以不填，这样这个 api 不会改变原有的缩放比。
+这个方法也可以只接受一个参数，当只有一个参数时，认为它是 scale 值。而 x,y 都会被保留，不会被改变。
+
+sprite:sr(sx,sy,rot)
+sprite:sr 可以用来做不等比缩放， x 轴和 y 轴的缩放比是分别由前两个参数传入的。比如，如果你想将 sprite 对象做左右镜像，只需要调用 `sprite:sr(-1,1)` 。
+第三个参数是可选的，表示旋转这个对象。单位是度，360 度为一圈。当只传入一个参数时，这个参数被解释为旋转，而原有的缩放量不会被改变。
+注：缩放、旋转、位移是按次序发生作用的。所以无论你如何缩放（镜像）都不会影响旋转的结果。而位移矢量是在做完缩放和旋转之后才生效的，所以放大对象不会使它偏离原点更远。
+
+sprite:fetch(name)
+一个 sprite 对象以树结构组织，若它的子节点在资源文件中标明了名字，那么可以用 fetch 方法获得这个子节点对象。
+
+sprite:children()
+获得精灵当前显示的带有名字的子精灵，返回{child1,child2,...}
+
+sprite:mount(name, child)
+在运行时，可以动态换掉一个 sprite 对象的具名子节点。这里 name 是一个字符串，child 是另一个 sprite 对象。
+注：不能将同一个 sprite 对象 mount 到两个不同的 sprite 对象上。如果你需要这样做，请用同一份资源构造两个 sprite 对象。
+
+sprite:detach(child)
+将精灵的某个子精灵分离出来，子精灵会继承其所有父结点的位置变换信息
+
+sprite:run_animation{end_func = nil, speed = 1, amount = 1, reversed = false}
+精灵执行当前动画,end_func为动画结束时调用，形式为function(sprite),sprite为当前精灵，
+speed指定动画播放速度，必须为正数，
+amount指定动画播放次数，若为0表示一直循环播放该动作，reversed表示是否反向播放动画，默认
+为false。
+
+sprite:stop_animation()
+精灵停止执行当前动画
+
+sprite:register_touch_handle(kind,func)
+给精灵注册某触摸事件响应函数，kind为触摸事件类型，目前支持：
+"press"(手指按住精灵),响应函数形式为function(sprite),sprite为当前精灵;
+"release"(按住精灵的手指松开),响应函数形式为function(sprite),sprite为当前精灵;
+"cancel"(手指移动到其他地方松开),响应函数形式为function(sprite),sprite为当前精灵;
+"shift"(手指移动),响应函数形式为function(sprite,dx,dy),sprite为当前精灵,dx为x轴上的移动距离,dy为y轴上的移动距离;
+
+sprite:type()
+返回精灵的类型，有如下值
+"PICTURE",
+"ANIMATION",
+"POLYGON",
+"LABEL",
+"PANEL",
+"ANCHOR",
+
+###sprite 属性
+* `sprite.frame` 可读写
+对象当前帧号
+* `sprite.visible` 可读写
+对象是否显示。这个标记如果被设置为 false，整个子树都不会显示。默认新建的精灵为不可见。
+* `sprite.text` 可读写
+只有 label 类型的对象才有这个属性。它是 label 的文字。
+* `sprite.color` 可读写
+对象的混合颜色，为一个 32bit ARGB 整数。这个对象及子树在渲染时都会乘上这个颜色，默认值为 0xffffffff 。最常用的做法是用于半透明效果，当 color 为 0x80ffffff 时，就是 50% 的半透明混合。
+* `sprite.additive` 可读写
+给对象叠加一个颜色，为一个 24bit RGB 整数，默认值为 0 。在渲染这个对象及子树时会叠加这个颜色。
+* `sprite.message` 可读写
+对象是否截获 触摸事件,多用于 UI 控制。
+* `sprite.frame_count` 只读
+对象的动画帧数。
+* `sprite.action` 只写
+设置一组动作动画。在资源文件中，一个对象对象可以有多组动画，被称为不同的 action 。每组 action 有一个字符串名字，通过设置 action 可以切换到不同的动画序列。默认的动画序列为资源文件中描述的第一个 action 。
+* `sprite.scissor` 只写
+让一个 panel 类型的对象具有剪切器的能力。这可以让一个 panel 节点以一个矩形（指定宽和高）为范围裁减它的子节点。一般用来实现滚动框。
+* `sprite.touch_count` 只写
+设置精灵同时能响应的触摸点的最大个数，默认为无限制。
+
+## ui
+
+local ui = require "ui"
+
+ui.new(packname,name)
+以 packname 指代的包中构造名为 name 的精灵对象创建ui控件，程序会读取packname
+对应的_ui_config.lua文件来调用下面的ui.*(spr,tbl)函数对控件进行初始化。
+
+* 以下ui.*(spr,tbl)函数也可以主动在代码中进行调用来动态创建ui控件
+ui.button(spr,tbl)
+创建按钮控件,继承自精灵
+tbl属性及其默认值：{
+	press_animation = {},					按钮按下时执行的动画
+	release_animation = {reversed=true},	按钮弹起时执行的动画
+	cancel_animation = {reversed=true},		按钮取消时执行的动画
+	disabled_frame = 0,						按钮禁用时显示的帧数
+}
+
+###button 方法
+button:set_disabled(disabled)
+设置按钮是否为禁用状态,处于禁用状态时精灵的frame设成disabled_frame
+
+button:on_pressed(touched)
+按钮按下时调用的逻辑函数，代码中给其附上相应的处理逻辑
+
+button:on_released(touched)
+按钮弹起时调用的逻辑函数，代码中给其附上相应的处理逻辑
+
+button:on_canceled(touched)
+按钮取消时调用的逻辑函数，代码中给其附上相应的处理逻辑
+
+ui.cover(spr,tbl)
+创建遮盖层控件,比如探索藏品里面的遮布，可擦除并露出下面的视图，继承自精灵
+spr必须是图片类型的精灵
+tbl属性及其默认值：{
+	init_size,				擦皮的初始尺寸
+	expand_size,			擦皮每隔1/10秒增大的尺寸
+	max_size,				擦皮的最大尺寸
+	dynamic_tex = {true},	指定其动态纹理信息
+}
+
+ui.panel(spr,tbl)
+创建面板控件,继承自view，用于容纳其他控件，为容器控件
+tbl属性及其默认值：{
+	order = "none",			容器内控件的排序方式，类似view的order
+}
+
+###panel 方法
+panel:get_element(name)
+获取面板中制定名字的元素
+
+ui.list_view(spr,tbl)
+创建下拉式面板控件,继承自view，可以上下拨动其内的物件
+tbl属性及其默认值：{
+	align = "left"			下拉框里物件的水平对其方式，有"left"，"center"，"right"
+	item_panel = "panel",	指定下拉面板的名字
+}
+
+###list_view 方法
+list_view:insert_item(index,item)
+将控件item放入下拉面板中，index为放入的位置，不填则为放在最后位置
+
+list_view:scroll(dy)
+将下拉框向下移动dy的距离，dy可以为负，表示向上移动
+
